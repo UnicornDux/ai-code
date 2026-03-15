@@ -2,8 +2,27 @@ package com.edu.ai;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration;
+import org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+    DataSourceAutoConfiguration.class,
+    DeepSeekChatAutoConfiguration.class,
+    OpenAiChatAutoConfiguration.class,
+    OpenAiAudioSpeechAutoConfiguration.class,
+    OpenAiAudioTranscriptionAutoConfiguration.class,
+    OpenAiEmbeddingAutoConfiguration.class,
+    OpenAiImageAutoConfiguration.class,
+    OpenAiModerationAutoConfiguration.class,
+    MariaDbStoreAutoConfiguration.class
+})
 public class AicodeApplication {
 
     public static void main(String[] args) {

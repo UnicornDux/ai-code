@@ -1,3 +1,9 @@
 spring:
   application:
     name: ai-code
+  ai:
+    ollama:
+      base-url: http://192.168.80.111:11434
+      chat:
+        options:
+          model: qwen3.5:35b
