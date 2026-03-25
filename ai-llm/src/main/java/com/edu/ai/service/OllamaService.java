@@ -9,13 +9,14 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 @Service
 public class OllamaService {
     
     private final ChatClient chatClient;
     private final ToolCallbackProvider toolCallbackProvider;
-    
+
     @Autowired
     public OllamaService(@Qualifier("ollamaChatModel") OllamaChatModel chatModel, ToolCallbackProvider provider) {
         this.chatClient = ChatClient.builder(chatModel).build();
@@ -51,6 +52,14 @@ public class OllamaService {
         return new com.edu.ai.dto.ChatResponse(aiResponse.getResult().getOutput().getText(), "qwen3.5:35b");
     }
 
+    public Flux<ChatResponse>  chatStreamMessage(String system, String user) {
+        return chatClient.prompt()
+                .system(system)
+                .user(user)
+                .stream().chatResponse();
+    }
+
+
     public com.edu.ai.dto.ChatResponse askWithTools(String msg) {
         ChatResponse chatResponse = chatClient.prompt()
                 .system("你是一个客服人员，需要回复用户的问题")
@@ -73,5 +82,7 @@ public class OllamaService {
                 .chatResponse();
         return new com.edu.ai.dto.ChatResponse(chatResponse.getResult().getOutput().getText(), "qwen3.5:35b");
     }
+
+
 
 }

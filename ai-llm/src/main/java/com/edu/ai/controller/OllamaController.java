@@ -6,6 +6,7 @@ import com.edu.ai.service.OllamaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping("/api/ollama")
@@ -39,7 +40,13 @@ public class OllamaController {
                     .body("Error: " + e.getMessage());
         }
     }
-    
+
+    @PostMapping("/chat/system")
+    public Flux<org.springframework.ai.chat.model.ChatResponse> chatWithStream(@RequestParam String system, @RequestParam String user) {
+        Flux<org.springframework.ai.chat.model.ChatResponse> chatResponseFlux = ollamaService.chatStreamMessage(system, user);
+        return chatResponseFlux;
+    }
+
     @PostMapping("/chat/system")
     public ResponseEntity<ChatResponse> chatWithSystem(@RequestParam String system, @RequestParam String user) {
         try {
