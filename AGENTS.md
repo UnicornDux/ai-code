@@ -1,273 +1,115 @@
 # AGENTS.md - AI Code Development Guide
 
 ## Project Overview
-
 - **Type**: Spring Boot 3.5.11 Multi-module Application
-- **Language**: Java 17
-- **Build System**: Gradle 8.14.4 (with wrapper)
-- **Primary Framework**: Spring AI 1.1.2 for LLM integration
-- **Modules**: `ai-code` (main), `ai-mcp-server` (MCP server submodule)
+- **Language**: Java 17  
+- **Build**: Gradle 8.14.4 (with wrapper)  
+- **Framework**: Spring AI 1.1.2 for LLM integration  
+
+### Modules
+- `ai-llm`: LLM service (Ollama, DeepSeek, OpenAI, RAG, MCP client) - package `com.edu.ai`
+- `ai-graph`: AI Graph workflows - package `com.edu.aigraph`
+- `ai-mcp-server`: MCP server - package `com.edu.mcp`
 
 ---
 
 ## Build Commands
-
-### Core Gradle Commands
-
 ```bash
-# Build entire project
-./gradlew build
-
-# Run all tests
-./gradlew test
-
-# Run a specific test class
-./gradlew test --tests "com.edu.ai.controller.OllamaControllerTest"
-
-# Run a single test method
-./gradlew test --tests "com.edu.ai.controller.OllamaControllerTest.testChat"
-
-# Run tests in a specific module
-./gradlew :ai-mcp-server:test
-
-# Clean and rebuild
-./gradlew clean build
-
-# Build without running tests
-./gradlew build -x test
-
-# Run the application
-./gradlew bootRun
-
-# Run specific module
-./gradlew :ai-mcp-server:bootRun
-
-# Check dependencies
-./gradlew dependencies
-
-# Gradle wrapper upgrade
-./gradlew wrapper --gradle-version=8.14.4
+./gradlew build                          # Build all
+./gradlew test                           # Run all tests
+./gradlew test --tests "com.edu.ai.controller.OllamaControllerTest"  # Test class
+./gradlew test --tests "com.edu.ai.controller.OllamaControllerTest.testChat"  # Single test
+./gradlew :ai-mcp-server:test            # Module tests
+./gradlew build -x test                  # Skip tests
+./gradlew bootRun                        # Run app
+./gradlew :ai-llm:bootRun                # Run module
 ```
+
+### Linting/Formatting (Add to build.gradle)
+```groovy
+plugins { id 'com.diffplug.spotless' version '6.25.0' }
+spotless { java { target 'src/**/*.java'; googleJavaFormat(); removeUnusedImports() } }
+```
+Run: `./gradlew spotlessApply`
 
 ---
 
-## Code Style Guidelines
+## Code Style
 
-### Java Naming Conventions
+### Naming
+- Classes: `PascalCase` (`OllamaController`, `ChatRequest`)
+- Methods: `camelCase` (`simpleChat()`, `chatWithSystemMessage()`)  
+- Variables: `camelCase` (`chatClient`, `ollamaService`)
+- Constants: `SCREAMING_SNAKE_CASE` (`MAX_RETRY_COUNT`)
+- Packages: `lowercase` (`com.edu.ai.controller`)
+- DTOs: `PascalCase` suffix (`ChatRequest`, `ChatResponse`)
 
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Classes | PascalCase | `OllamaController`, `ChatRequest` |
-| Methods | camelCase | `simpleChat()`, `chatWithSystemMessage()` |
-| Variables | camelCase | `chatClient`, `ollamaService` |
-| Constants | SCREAMING_SNAKE | `MAX_RETRY_COUNT` |
-| Packages | lowercase | `com.edu.ai.controller` |
-| DTOs | PascalCase with suffix | `ChatRequest`, `ChatResponse` |
+### Imports
+Group with blank lines: 1) Java/Jakarta, 2) Spring, 3) Third-party, 4) Project (`com.edu.*`)
 
-### Package Structure
+### Dependencies
+- Constructor injection (preferred)
+- `private final` fields
+- `@Qualifier` for multiple beans
 
-```
-com.edu.ai/
-├── AicodeApplication.java      # Main application entry
-├── controller/                 # REST controllers
-├── service/                    # Business logic
-├── dto/                        # Data transfer objects
-├── config/                     # Configuration classes
-├── exception/                  # Custom exceptions
-└── tools/                      # AI tools
-```
-
-### Import Organization
-
-Organize imports in this order (IDE can handle this automatically):
-
-1. Java/Jakarta standard library
-2. Spring framework imports
-3. Third-party libraries
-4. Project imports (com.edu.ai.*)
-5. Blank line between groups
-
-```java
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import com.edu.ai.dto.ChatRequest;
-import com.edu.ai.service.OllamaService;
-```
-
-### Field Declaration
-
-- Always use constructor injection (preferred over `@Autowired` on fields)
-- Use `private final` for dependency-injected fields
-- Use `@Qualifier` when multiple beans of same type exist
-
-```java
-@Service
-public class OllamaService {
-    private final ChatClient chatClient;
-    
-    @Autowired
-    public OllamaService(@Qualifier("ollamaChatModel") OllamaChatModel chatModel) {
-        this.chatClient = ChatClient.builder(chatModel).build();
-    }
-}
-```
-
-### Controller Patterns
-
-- Use `@RestController` for REST endpoints
-- Use `@RequestMapping` at class level for path prefix
-- Return `ResponseEntity<T>` for flexibility
-- Wrap exceptions in try-catch, return appropriate HTTP status
-
-```java
-@RestController
-@RequestMapping("/api/ollama")
-public class OllamaController {
-    private final OllamaService ollamaService;
-    
-    @Autowired
-    public OllamaController(OllamaService ollamaService) {
-        this.ollamaService = ollamaService;
-    }
-    
-    @PostMapping("/chat")
-    public ResponseEntity<ChatResponse> chat(@RequestBody ChatRequest request) {
-        try {
-            ChatResponse response = ollamaService.chat(request);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(new ChatResponse("Error: " + e.getMessage(), "error"));
-        }
-    }
-}
-```
-
-### DTO Conventions
-
-- Use JavaBean naming (getters/setters with `get`/`set` prefix)
-- Provide multiple constructors for convenience
-- Use descriptive field names
-
-```java
-public class ChatRequest {
-    private String message;
-    private String model;
-    
-    public ChatRequest() {}
-    
-    public ChatRequest(String message) {
-        this.message = message;
-    }
-    
-    public ChatRequest(String message, String model) {
-        this.message = message;
-        this.model = model;
-    }
-    // getters and setters...
-}
-```
+### Controllers
+- `@RestController` with `@RequestMapping` at class level
+- Return `ResponseEntity<T>`
+- Try-catch with appropriate HTTP status (200, 400, 500)
 
 ### Error Handling
+- Controller-level exception handling
+- Log errors with framework logging
+- Return user-friendly messages
 
-- Catch exceptions at controller level for REST endpoints
-- Log errors appropriately using a logging framework
-- Return user-friendly error messages
-- Use appropriate HTTP status codes:
-  - `200 OK` - Success
-  - `400 Bad Request` - Invalid input
-  - `500 Internal Server Error` - Server-side errors
-
----
-
-## Testing Guidelines
-
-### Test Class Structure
-
-- Place tests in `src/test/java` mirroring `src/main/java` structure
-- Use `@WebMvcTest` for controller tests (loads only web layer)
-- Use `@MockBean` to mock service dependencies
-- Use `@Autowired` for `MockMvc` and `ObjectMapper`
-
-```java
-@WebMvcTest(OllamaController.class)
-class OllamaControllerTest {
-    @Autowired
-    private MockMvc mockMvc;
-    
-    @MockBean
-    private OllamaService ollamaService;
-    
-    @Autowired
-    private ObjectMapper objectMapper;
-    
-    @Test
-    void testChat() throws Exception {
-        // test implementation
-    }
-}
-```
-
-### Test Method Naming
-
-- Use descriptive names: `test<WhatIsBeingTested>`
-- Use `when()` from Mockito to set up mocks
-- Use `any()` matcher when argument doesn't matter
-
-```java
-@Test
-void testChat() throws Exception {
-    when(ollamaService.chat(any(ChatRequest.class))).thenReturn(response);
-    
-    mockMvc.perform(post("/api/ollama/chat")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.response").value("I'm doing well!"));
-}
-```
-
-### Service Test Patterns
-
-```java
-@SpringBootTest
-class OllamaServiceTest {
-    @MockBean
-    private OllamaChatModel chatModel;
-    
-    @Test
-    void testSimpleChat() {
-        when(chatModel.call(any())).thenReturn(expectedResponse);
-        // test implementation
-    }
-}
-```
+### DTOs
+- JavaBean naming (getters/setters)
+- Multiple constructors for convenience
 
 ---
 
-## Lombok Usage
+## Testing
 
-Lombok is configured but use judiciously:
+### Structure
+- Tests in `src/test/java` mirroring main structure
+- `@WebMvcTest` for controller tests
+- `@MockBean` for services, `@Autowired` for `MockMvc`
 
-```groovy
-compileOnly 'org.projectlombok:lombok'
-annotationProcessor 'org.projectlombok:lombok'
-```
-
-- Use `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor` as needed
-- Always add `lombok.config` if you need specific Lombok behavior
+### Patterns
+- Descriptive names: `test<WhatIsBeingTested>`
+- Use `when().thenReturn()` for mocks
+- Use `any()` matcher when appropriate
 
 ---
 
-## Spring Boot Configuration
+## Lombok
+Configured: `compileOnly 'org.projectlombok:lombok'`
+Use `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`
 
-### Application Properties
+---
 
-Configuration is in `src/main/resources/application.yaml`:
+## Module Notes
+- **ai-llm**: `com.edu.ai` - RAG with Redis vector store, MCP client
+- **ai-graph**: `com.edu.aigraph` - Uses `@Slf4j` for logging
+- **ai-mcp-server**: `com.edu.mcp` - Tool definitions in `com.edu.mcp.tool`
 
+---
+
+## Git
+- Imperative mood: "Add feature" not "Added feature"
+- Short summary (50 chars max), explain what/why in body
+
+---
+
+## Common Issues
+- **Package mismatch**: Ensure imports match module packages
+- **Missing beans**: Check `@Qualifier` for multiple beans
+- **Test failures**: Verify mock setup with `when().thenReturn()`
+
+---
+
+## Configuration
+`application.yaml`:
 ```yaml
 spring:
   ai:
@@ -275,71 +117,12 @@ spring:
       base-url: http://192.168.80.111:11434
     deepseek:
       api-key: ${DEEPSEEK_API_KEY}
-      base-url: https://api.deepseek.com
 ```
 
-### Excluding Auto-configurations
-
-When excluding Spring AI auto-configurations:
-
+Exclude auto-configurations:
 ```java
 @SpringBootApplication(exclude = {
     DeepSeekChatAutoConfiguration.class,
-    OpenAiChatAutoConfiguration.class,
-    // ...
+    OpenAiChatAutoConfiguration.class
 })
-```
-
----
-
-## Git Conventions
-
-### Commit Messages
-
-- Use imperative mood: "Add feature" not "Added feature"
-- First line: Short summary (50 chars max)
-- Body: Explain what and why (optional)
-
-### File Organization
-
-- Main code: `src/main/java`
-- Tests: `src/test/java`
-- Resources: `src/main/resources`
-- Configuration: `src/main/resources/application.yaml`
-
----
-
-## Common Patterns
-
-### REST API Response Wrapper
-
-Return consistent response structure:
-
-```java
-public ResponseEntity<ChatResponse> endpoint(@RequestBody Request request) {
-    try {
-        return ResponseEntity.ok(service.process(request));
-    } catch (Exception e) {
-        return ResponseEntity.internalServerError()
-                .body(new ChatResponse("Error: " + e.getMessage(), "error"));
-    }
-}
-```
-
-### Dependency Injection
-
-Prefer constructor injection over field injection:
-
-```java
-@Service
-public class MyService {
-    private final DepA depA;
-    private final DepB depB;
-    
-    @Autowired
-    public MyService(DepA depA, DepB depB) {
-        this.depA = depA;
-        this.deB = depB;
-    }
-}
 ```
