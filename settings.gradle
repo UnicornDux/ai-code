@@ -1,1 +1,5 @@
 rootProject.name = 'ai-code'
+
+include ':ai-llm'
+include ':ai-mcp-server'
+include ':ai-graph'

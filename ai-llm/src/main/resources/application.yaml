@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: ai-code
+  ai:
+    ollama:
+      base-url: http://192.168.80.111:11434
+      chat:
+        options:
+          model: qwen3.5:35b
+      embedding:
+        options:
+          model: qwen3.5:35b
+          # 部分模型可以指定向量的维度
+          # dimensions: 256
+    vectorstore:
+      redis:
+        initialize-schema: true # 启动时自动创建向量索引结构
+        prefix: mini_rag_of     # key 前缀
+        index-name: mini_rag_index   # 索引名称
+    mcp:
+      client:
+        annotation-scanner:
+          enabled: true
+        sse:
+          connections:
+            # server name, address
+            server1: http://localhost:8002
+
+
+  data:
+    redis:
+      host: 192.168.122.10
+      port: 6380
+      password: redis123!@#
+
+
