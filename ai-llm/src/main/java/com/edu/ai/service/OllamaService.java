@@ -3,6 +3,10 @@ package com.edu.ai.service;
 import com.edu.ai.dto.ChatRequest;
 import com.edu.ai.tools.TimeTool;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -19,7 +23,10 @@ public class OllamaService {
 
     @Autowired
     public OllamaService(@Qualifier("ollamaChatModel") OllamaChatModel chatModel, ToolCallbackProvider provider) {
-        this.chatClient = ChatClient.builder(chatModel).build();
+        this.chatClient = ChatClient.builder(chatModel)
+                // 为模型添加记忆功能
+                .defaultAdvisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
+                .build();
         this.toolCallbackProvider = provider;
     }
     
@@ -55,6 +62,9 @@ public class OllamaService {
     public Flux<ChatResponse>  chatStreamMessage(String system, String user) {
         return chatClient.prompt()
                 .system(system)
+
+                // 使用记忆功能
+                .advisors( a -> a.param("chatId", 10).param("userId", 10))
                 .user(user)
                 .stream().chatResponse();
     }
